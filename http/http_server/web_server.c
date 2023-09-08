@@ -46,6 +46,7 @@ int main(int argc, char *argv[]){
 
     struct client_info *c;
     int server_sock=create_socket(NULL,"8081");
+    printf("\n\nStarted server at 8081\n\n");
 
     while(1){
 

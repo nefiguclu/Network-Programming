@@ -25,6 +25,8 @@ int main(int argc, char *argv[]){
     hints.ai_family=PF_INET;
     hints.ai_flags=AI_PASSIVE;
     struct addrinfo *bind_address;
+ 
+    printf("\n\nStarted server at 8080\n\n");
 
     printf("Configuring local adress..\n");
     if(getaddrinfo(NULL,"8080",&hints,&bind_address))

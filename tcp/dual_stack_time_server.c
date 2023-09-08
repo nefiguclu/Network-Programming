@@ -20,6 +20,7 @@ int main(){
     hints.ai_socktype=SOCK_STREAM;
     hints.ai_flags=AI_PASSIVE;
 
+    printf("\n\nStarted server at 8080\n\n");
     struct addrinfo *bind_address;
     getaddrinfo(NULL,"8080",&hints,&bind_address);
 

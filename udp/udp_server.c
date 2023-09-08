@@ -25,6 +25,10 @@ int main(int argc, char *argv[]){
     hints.ai_socktype=SOCK_DGRAM;
     hints.ai_flags=AI_PASSIVE;
     struct addrinfo *bind_address;
+
+    printf("\n\nStarted server at 8080\n\n");
+
+
     if(getaddrinfo(NULL,"8080",&hints,&bind_address))
         err("getaddrinfo");
 
