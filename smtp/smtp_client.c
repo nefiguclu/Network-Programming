@@ -12,10 +12,16 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include "../log.h"
+
 
 #define MAX_INPUT 512
 #define MAX_RESPONSE 1024
 
+#ifdef LOG_LEVEL
+#undef LOG_LEVEL
+#define LOG_LEVEL LOG_LEVEL_INFO
+#endif
 
 
 void get_input(char *promt, char *buffer);
@@ -27,13 +33,13 @@ int connect_to_host(char *hostname,char *port);
 
 int main(){
 
-    fprintf(stderr,"\n\nusage: cat input | ./smtp_client \n\n");
+    LOG_INFO("usage: cat input | ./smtp_client");
 
 
     char hostname[MAX_INPUT];
     get_input("Mail Server: ",hostname);
 
-    printf("connecting to mail server %s\n",hostname);
+    LOG_INFO("connecting to mail server %s",hostname);
     int serverfd=connect_to_host(hostname, "25");
 
     wait_response(serverfd,220);
@@ -65,7 +71,7 @@ int main(){
     send_format(serverfd, "\r\n");
 
 
-    printf("--Enter E-mail body end with single \".\" line\n");
+    LOG_INFO("--Enter E-mail body end with single \".\" line");
 
     while(1){
         char body[MAX_INPUT];
@@ -81,7 +87,7 @@ int main(){
     send_format(serverfd, "QUIT \r\n");
     wait_response(serverfd,221);
 
-    printf("Closing Socket .\n");
+    LOG_INFO("Closing Socket .");
     close(serverfd);
 
     return 0;
@@ -90,7 +96,7 @@ int main(){
 
 void get_input(char *promt, char *buffer){
 
-    printf("%s\n", promt);
+    LOG_DBG("%s", promt);
 
     fgets(buffer,MAX_INPUT,stdin);
     int read=strlen(buffer);
@@ -111,7 +117,7 @@ void send_format(int sockfd, char *text,...){
 
     send(sockfd,buf,strlen(buf),0);
 
-    printf("Client Req: %s\n",buf);
+    LOG_INFO("Client Req: %s",buf);
 
 }
 
@@ -126,13 +132,13 @@ void wait_response(int sockfd,int expecting){
 
     do{
         if(p==end){
-            fprintf(stderr,"buffer overflow\n");
+            LOG_ERR("buffer overflow");
             exit(EXIT_FAILURE);
         }
 
         int bytes_received = recv(sockfd,response_buf,end-p,0);
         if(bytes_received<1){
-            fprintf(stderr,"connection closed by server\n");
+            LOG_ERR("connection closed by server");
             close(sockfd);
             exit(EXIT_FAILURE);
         }
@@ -146,12 +152,12 @@ void wait_response(int sockfd,int expecting){
 
 
     if(code != expecting){
-        fprintf(stderr,"Error wrong code\n");
-        fprintf(stderr,"Response %s\n",response_buf);
+        LOG_ERR("Error wrong code");
+        LOG_ERR("Response %s",response_buf);
         exit(EXIT_FAILURE);
     }
 
-    printf("Server Response: %s\n",response_buf);
+    LOG_INFO("Server Response: %s",response_buf);
 
 }
 
@@ -188,34 +194,34 @@ int connect_to_host(char *hostname,char *port){
     hints.ai_socktype=SOCK_STREAM;
     hints.ai_flags= AI_ALL | AI_ADDRCONFIG;
 
-    printf("Configuring remote adress...\n");
+    LOG_INFO("Configuring remote adress...");
     if(getaddrinfo(hostname, port, &hints, &peer_address)){
-        fprintf(stderr,"Error getaddrinfo\n %d %s \n",errno,strerror(errno));
+        LOG_ERR("getaddrinfo %s ",strerror(errno));
         exit(EXIT_FAILURE);   
     }
     
 
-    printf("Remote adress is: ");
+    LOG_INFO("Remote adress is: ");
     char adress_buf[100];
     char service_buf[100];
     getnameinfo(peer_address->ai_addr,peer_address->ai_addrlen,adress_buf,sizeof(adress_buf),service_buf,sizeof(service_buf),NI_NUMERICHOST);
-    printf("%s %s \n",adress_buf,service_buf);
+    LOG_INFO("%s %s ",adress_buf,service_buf);
 
-    printf("Creating socket...\n");
+    LOG_INFO("Creating socket...");
     int sockfd=socket(peer_address->ai_family,peer_address->ai_socktype,peer_address->ai_protocol);
     if(sockfd==-1){
-        fprintf(stderr,"socket failed with error %d\n",errno);
+        LOG_ERR("socket  %s",strerror(errno));
         exit(EXIT_FAILURE);   
     }
 
-    printf("Connecting...\n");
+    LOG_INFO("Connecting...");
     if(connect(sockfd,peer_address->ai_addr,peer_address->ai_addrlen)){
-        fprintf(stderr,"connect failed with error %d\n",errno);
+        LOG_ERR("connect  %s",strerror(errno));
         exit(EXIT_FAILURE);   
     }
 
     freeaddrinfo(peer_address);
-    printf("Connected...\n");
+    LOG_INFO("Connected...");
 
     return sockfd;
 }
