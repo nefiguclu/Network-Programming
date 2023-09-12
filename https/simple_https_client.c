@@ -103,7 +103,6 @@ int main(int argc, char *argv[]){
         LOG_INFO("Certificates verified!");
     else{
         LOG_ERR("Certificates NOT verified!");
-        return -1;
     }
 
     send_request(ssl, argv[1],argv[2], "/");
