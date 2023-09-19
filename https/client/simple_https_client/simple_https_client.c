@@ -1,18 +1,5 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
+#include "util.h"
 
-#include "../log.h"
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
@@ -25,7 +12,6 @@
 #define LOG_LEVEL LOG_LEVEL_INFO
 #endif
 
-int connect_to_host(char *hostname, char *port);
 void send_request(SSL* ssl, char *hostname, char *port, char *path);
 
 int main(int argc, char *argv[]){
@@ -52,7 +38,7 @@ int main(int argc, char *argv[]){
         return -1;  
     }
 
-    int server = connect_to_host(argv[1],argv[2]);
+    int server = connect_to_host_tcp(argv[1],argv[2]);
 
 
     SSL *ssl = SSL_new(ctx);
@@ -131,54 +117,6 @@ int main(int argc, char *argv[]){
     return 0;
 
 }
-
-
-int connect_to_host(char *hostname, char *port) {
-
-
-    struct addrinfo hints;
-    struct addrinfo *peer_adress;
-    
-    memset(&hints,0,sizeof(hints));
-    hints.ai_socktype=SOCK_STREAM;
-    hints.ai_flags= AI_ALL | AI_ADDRCONFIG;
-
-    if(getaddrinfo(hostname,port,&hints,&peer_adress)){
-        LOG_ERR("getaddrinfo failed %s",strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    char host[254];
-    char serv[254];
-
-    if(getnameinfo(peer_adress->ai_addr,peer_adress->ai_addrlen,host,sizeof(host),serv,sizeof(serv),NI_NUMERICHOST | NI_NUMERICSERV)){
-        LOG_ERR("getaddrinfo failed %s",strerror(errno));
-    }
-
-    LOG_INFO("hostname: %s",host);
-    LOG_INFO("service: %s",serv);
-
-
-    int sockfd=socket(peer_adress->ai_family,peer_adress->ai_socktype,peer_adress->ai_protocol);
-    if(sockfd<0){
-        LOG_ERR("socket failed %s",strerror(errno));
-        exit(EXIT_FAILURE);
-
-    }
-
-    if(connect(sockfd,peer_adress->ai_addr,peer_adress->ai_addrlen)){
-        LOG_ERR("connect failed %s",strerror(errno));
-        exit(EXIT_FAILURE);
-
-    }
-
-    LOG_INFO("Connected...%s",host);
-
-
-    return sockfd;
-
-}
-
 
 void send_request(SSL* ssl, char *hostname, char *port, char *path){
     

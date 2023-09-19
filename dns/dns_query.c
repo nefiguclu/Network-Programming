@@ -259,32 +259,25 @@ void printDnsMessage(const unsigned char *message,int length){
                 }
                 printf("\n");
             }
-
         }
     }
-
     if( p != end) 
         LOG_INFO("There is some unread data");
 
     printf("\n");
-
-
 }
 
 const unsigned char *print_name(const char *msg,const unsigned char *p,const char *end){
-
     if(p + 2  > end){
         LOG_ERR("end of message");
         exit(EXIT_FAILURE);
     }
-
     if((p[0] & 0xc0) == 0xc0){
         int offset= ((p[0] & 0x3F) << 8) + p[1];
         print_name(msg, msg+offset, end);
         return p+2;
     }
     else{
-
         int len = p[0];
         p+=1;
 
@@ -303,8 +296,5 @@ const unsigned char *print_name(const char *msg,const unsigned char *p,const cha
         else{
             return p+1;
         }
-
     }
-
-
 }

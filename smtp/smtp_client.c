@@ -1,19 +1,4 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
-
-#include "../log.h"
-
+#include "util.h"
 
 #define MAX_INPUT 512
 #define MAX_RESPONSE 1024
@@ -28,7 +13,6 @@ void get_input(char *promt, char *buffer);
 void send_format(int sockfd, char *text,...);
 int parse_response(char *response);
 void wait_response(int sockfd,int expecting);
-int connect_to_host(char *hostname,char *port);
 
 
 int main(){
@@ -40,7 +24,7 @@ int main(){
     get_input("Mail Server: ",hostname);
 
     LOG_INFO("connecting to mail server %s",hostname);
-    int serverfd=connect_to_host(hostname, "25");
+    int serverfd=connect_to_host_tcp(hostname, "25");
 
     wait_response(serverfd,220);
 
@@ -97,7 +81,6 @@ int main(){
 void get_input(char *promt, char *buffer){
 
     LOG_DBG("%s", promt);
-
     fgets(buffer,MAX_INPUT,stdin);
     int read=strlen(buffer);
     if(read > 0){
@@ -161,7 +144,6 @@ void wait_response(int sockfd,int expecting){
 
 }
 
-
 int parse_response(char *response){
 
     char *p = response;
@@ -182,46 +164,4 @@ int parse_response(char *response){
     }
 
     return 0;
-}
-
-
-int connect_to_host(char *hostname,char *port){
-
-    struct addrinfo hints;
-    struct addrinfo *peer_address;
-
-    memset(&hints,0,sizeof(hints));
-    hints.ai_socktype=SOCK_STREAM;
-    hints.ai_flags= AI_ALL | AI_ADDRCONFIG;
-
-    LOG_INFO("Configuring remote adress...");
-    if(getaddrinfo(hostname, port, &hints, &peer_address)){
-        LOG_ERR("getaddrinfo %s ",strerror(errno));
-        exit(EXIT_FAILURE);   
-    }
-    
-
-    LOG_INFO("Remote adress is: ");
-    char adress_buf[100];
-    char service_buf[100];
-    getnameinfo(peer_address->ai_addr,peer_address->ai_addrlen,adress_buf,sizeof(adress_buf),service_buf,sizeof(service_buf),NI_NUMERICHOST);
-    LOG_INFO("%s %s ",adress_buf,service_buf);
-
-    LOG_INFO("Creating socket...");
-    int sockfd=socket(peer_address->ai_family,peer_address->ai_socktype,peer_address->ai_protocol);
-    if(sockfd==-1){
-        LOG_ERR("socket  %s",strerror(errno));
-        exit(EXIT_FAILURE);   
-    }
-
-    LOG_INFO("Connecting...");
-    if(connect(sockfd,peer_address->ai_addr,peer_address->ai_addrlen)){
-        LOG_ERR("connect  %s",strerror(errno));
-        exit(EXIT_FAILURE);   
-    }
-
-    freeaddrinfo(peer_address);
-    LOG_INFO("Connected...");
-
-    return sockfd;
 }

@@ -1,16 +1,4 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-
-
+#include "util.h"
 
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
@@ -18,23 +6,19 @@
 #include <openssl/err.h>
 #include <openssl/x509.h>
 
-#include "../log.h"
-
-
 
 #define TIMEOUT 5
 #define RESPONSE_SIZE 901920
 
 
 int parse_url(char *url, char **hostname, char **port, char **path);
-int connect_to_host(char *hostname,char *port);
 void send_request(SSL* ssl, char *hostname, char *port, char *path);
 
 int main(int argc, char *argv[]){
 
 
     if(argc<2){
-        fprintf(stderr,"usage: web_client url\n");
+        fprintf(stderr,"usage: web_client url(http://www.examle.org:8080/somepath#hash)\n");
         return -1;
     }
 
@@ -65,7 +49,7 @@ int main(int argc, char *argv[]){
     }
 
     parse_url(url,&hostname,&port,&path);
-    int sockfd=connect_to_host(hostname,port);
+    int sockfd=connect_to_host_tcp(hostname,port);
 
     SSL *ssl = SSL_new(ctx);
     if(!ssl){
@@ -259,52 +243,6 @@ finish:
 
     return 0;
 }
-
-
-
-int connect_to_host(char *hostname,char *port){
-
-    struct addrinfo hints;
-    struct addrinfo *peer_addr;
-    int sock;
-
-    memset(&hints,0,sizeof(hints));
-    hints.ai_socktype=SOCK_STREAM;
-    hints.ai_flags=AI_ALL | AI_ADDRCONFIG;
-
-    printf("Configuring remote adress...\n");
-    if(getaddrinfo(hostname,port,&hints,&peer_addr)){
-        fprintf(stderr,"getaddrinfo failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Remote adress is:\n");
-    char name[1024];
-    char serv[1024];
-    getnameinfo(peer_addr->ai_addr,peer_addr->ai_addrlen,name,sizeof(name),serv,sizeof(serv),NI_NUMERICHOST | NI_NUMERICSERV);
-    printf("Name: %s\nServ: %s\n",name,serv);
-
-
-    printf("Creating Socket...\n");
-    sock=socket(peer_addr->ai_family,peer_addr->ai_socktype,peer_addr->ai_protocol);
-    if(sock<0){
-        fprintf(stderr,"socket failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Connecting...\n");
-    if(connect(sock,peer_addr->ai_addr,peer_addr->ai_addrlen)){
-        fprintf(stderr,"connect failed\n");
-        exit(EXIT_FAILURE);        
-    }
-
-
-    printf("Connected...\n");
-    freeaddrinfo(peer_addr);
-
-    return sock;
-}
-
 
 void send_request(SSL* ssl, char *hostname, char *port, char *path){
     

@@ -1,52 +1,15 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <sys/select.h>
-#include <ctype.h>
+
+#include "util.h"
+
 
 void err(char * err_msg){
-    fprintf(stderr,"%s error: %d \n",err_msg,errno);
+    LOG_ERR("%s: %d \n",err_msg,strerror(errno));
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]){
 
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    hints.ai_socktype=SOCK_STREAM;
-    hints.ai_family=PF_INET;
-    hints.ai_flags=AI_PASSIVE;
-    struct addrinfo *bind_address;
- 
-    printf("\n\nStarted server at 8080\n\n");
-
-    printf("Configuring local adress..\n");
-    if(getaddrinfo(NULL,"8080",&hints,&bind_address))
-        err("getaddrinfo");
-   
-    printf("Creating socket..\n");
-    int sock_listen;
-    if((sock_listen=socket(bind_address->ai_family,bind_address->ai_socktype,bind_address->ai_protocol))==-1)
-        err("socket");
-    
-    printf("Binding local address..\n");
-    if(bind(sock_listen,bind_address->ai_addr,bind_address->ai_addrlen))
-        err("Bind");
-    
-    freeaddrinfo(bind_address);
-
-    printf("Listening...\n");
-    if(listen(sock_listen,10))
-        err("listen");
-
+    int sock_listen = configure_tcp_server(NULL,"8080");
     fd_set master;
     fd_set read;
 
@@ -64,9 +27,9 @@ int main(int argc, char *argv[]){
     FD_ZERO(&master);
     FD_SET(sock_listen,&master);
 
-    printf("Waiting for a connection...\n");
-    while(1){
+    LOG_INFO("Waiting for a connection...");
 
+    while(1){
         read=master;
         if(select(max+1,&read,NULL,NULL,NULL)==-1)
             err("select");
@@ -77,7 +40,7 @@ int main(int argc, char *argv[]){
                         err("accept");
                     if(getnameinfo((struct sockaddr*)&peer_addr,peer_len,host_addr,sizeof(host_addr),serv_addr,sizeof(serv_addr),NI_NUMERICHOST))
                         err("getnameinfo");
-                    printf("Client connected: %s %s\n",host_addr,serv_addr);
+                    LOG_INFO("Client connected: %s %s",host_addr,serv_addr);
 
                     FD_SET(peer_sock,&master);
                     peer_sock>max?max=peer_sock:max; 
@@ -85,7 +48,7 @@ int main(int argc, char *argv[]){
                 else{
                     bytes_received=recv(i,read_buf,1024,0);
                     if(bytes_received==-1){
-                        printf("connection closed by client closing socket...\n");
+                        LOG_INFO("connection closed by client closing socket...");
                         FD_CLR(i,&master);
                         close(i);
                         continue;
@@ -102,7 +65,6 @@ int main(int argc, char *argv[]){
             }   
         }
     }
-
     close(sock_listen);
     return 0;
 

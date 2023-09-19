@@ -1,0 +1,37 @@
+
+CC       := gcc
+CFLAGS   := -c -Wall -I$(INC_DIR)
+
+EXE      := $(BINDIR)/$(EXE_NAME)
+SRC 	 := $(wildcard $(SRC_DIR)/*.c)
+SRC 	 += $(wildcard $(INC_DIR)/*.c)
+OBJECTS  := $(SRC:.c=.o)
+
+
+$(info    OBJECTS is $(OBJECTS))
+$(info    SRC is $(SRC))
+
+.PHONY: all clean
+
+
+all:    $(EXE)
+
+$(EXE): $(OBJECTS) | $(BINDIR)
+	$(CC) $^ -o $@ $(LIBS)
+	rm -rf $(OBJECTS)
+	
+
+$(OBJDIR)/%.o:  $(SRC_DIR)/%.c $(INC_DIR)/%.c
+	$(CC) $(CFLAGS) $< -o $@ 
+
+$(BINDIR):
+	mkdir -p $@
+
+
+clean:
+	rm -rf $(OBJECTS) $(BINDIR)
+
+
+-include $(OBJ:.o=.d)
+
+

@@ -1,16 +1,7 @@
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
+#include <sys/stat.h>
 #include <fcntl.h>
+
+#include "util.h"
 
 
 #define MAX_REQUEST 5096
@@ -27,7 +18,7 @@ struct client_info{
 struct client_info *clients=NULL;
 
 char *content_type(char *path);
-int create_socket(char *host,char *port);
+
 
 struct client_info * wait_on_clients(int server_sockfd);
 struct client_info *get_client(int client_sockfd);
@@ -39,14 +30,15 @@ void serve_content(struct client_info *client,char *path);
 //char *get_client_address(struct client_info * ci);
 
 
-
-
-
 int main(int argc, char *argv[]){
 
     struct client_info *c;
-    int server_sock=create_socket(NULL,"8081");
-    printf("\n\nStarted server at 8081\n\n");
+
+
+    int server_sock=configure_tcp_server(NULL,"8088");
+
+
+    printf("\n\nStarted server at 8088\n\n");
 
     while(1){
 
@@ -56,9 +48,8 @@ start:
         if(c){ 
             //there is a message from client
             //get and parse
-
             while(!strstr(c->data,"\r\n\r\n")){
-                if(c->received==MAX_REQUEST){
+                if(c->received>=MAX_REQUEST){
                     send_404(c);
                     goto start;
                 }
@@ -69,10 +60,11 @@ start:
                     drop_client(c);
                 }
                 c->received+=bytes_recived;
-
         }
 
         c->data[c->received]='\0';
+
+
         if(strncmp("GET /",c->data,5)){
             send_400(c);
         }
@@ -105,6 +97,7 @@ struct client_info *wait_on_clients(int server_sockfd){
     int max=server_sockfd;
 
     struct client_info *p = clients;
+    
     while(p){
         FD_SET(p->sockfd,&reads);
         if(p->sockfd > max)
@@ -123,6 +116,7 @@ struct client_info *wait_on_clients(int server_sockfd){
         printf("New connection...\n");
         struct client_info *client=get_client(-1);
         client->sockfd=accept(server_sockfd, (struct sockaddr *)&client->addr, &client->addr_len);
+        return NULL;
     }
 
     p=clients;
@@ -147,7 +141,7 @@ struct client_info *get_client(int client_sockfd){
         p=p->next;
     }
 
-    struct client_info *q=(struct client_info *)calloc(1,sizeof(struct client_info *));
+    struct client_info *q=(struct client_info *)calloc(1,sizeof(struct client_info));
     if(!q){
         fprintf(stderr,"calloc Failed\n");
         exit(EXIT_FAILURE); 
@@ -164,6 +158,7 @@ struct client_info *get_client(int client_sockfd){
 void drop_client(struct client_info *client){
 
     struct client_info *p=clients;
+
     close(client->sockfd);
 
     printf("clients before drop\n");
@@ -180,6 +175,7 @@ void drop_client(struct client_info *client){
 
             *pp=client->next;
             free(client);
+
             p=clients;
             printf("clients after drop\n");
             while (p)
@@ -191,6 +187,7 @@ void drop_client(struct client_info *client){
             return;
 
         }
+
         pp=&((*pp)->next);
     }
     
@@ -220,6 +217,8 @@ void serve_content(struct client_info *client,char *path){
     }
 
     sprintf(fullpath,"public%s",path);
+
+    LOG_ERR("FULLPATH %s",fullpath);
     
     int fd=open(fullpath,O_RDONLY);
     if(fd<0){
@@ -258,7 +257,6 @@ void serve_content(struct client_info *client,char *path){
 
 void send_400(struct client_info *client){
 
-
     char *c400="HTTP/1.1 400 Bad Request\r\n"
             "Connection: close\r\n"
             "Content-Length: 11\r\n\r\nBad Request";
@@ -271,6 +269,9 @@ void send_400(struct client_info *client){
 void send_404(struct client_info *client){
 
 
+    fprintf(stderr,"404\n");
+
+
     char *c404="HTTP/1.1 404 Bad Request\r\n"
             "Connection: close\r\n"
             "Content-Length: 9\r\n\r\nNot Found";
@@ -280,53 +281,14 @@ void send_404(struct client_info *client){
 
 }
 
-
-int create_socket(char *host,char *port){
-
-    struct addrinfo hints;
-    struct addrinfo *bind_address;
-
-    memset(&hints,0,sizeof(hints));
-
-    hints.ai_socktype=SOCK_STREAM;
-    hints.ai_family=AF_INET;
-    hints.ai_flags=AI_PASSIVE;
-
-    printf("Configuring local adress...\n");
-    if(getaddrinfo(host,port,&hints,&bind_address)){
-        fprintf(stderr,"getaddrinfo Failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Creating socket...\n");
-    int sockfd=socket(bind_address->ai_family,bind_address->ai_socktype,bind_address->ai_protocol);
-    if(sockfd<0){
-        fprintf(stderr,"socket Failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Binding socket...\n");
-    if(bind(sockfd,bind_address->ai_addr,bind_address->ai_addrlen)){
-        fprintf(stderr,"bind Failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Listening...\n");
-    if(listen(sockfd,10)){
-        fprintf(stderr,"listen Failed\n");
-        exit(EXIT_FAILURE);
-    }
-
-    return sockfd;
-}
-
-
 char *content_type(char *path){
 
     static char command[1024];
 
     sprintf(command, "file --mime-type ");
     sprintf(command + strlen(command), "%s", path);
+
+    LOG_ERR("COMMAND %s",command);
 
     FILE *fp=popen(command,"r");
 
@@ -337,6 +299,7 @@ char *content_type(char *path){
 
     fgets(command, sizeof(command), fp);
 
+    pclose(fp);
     return strchr(command,' ');
 
 }

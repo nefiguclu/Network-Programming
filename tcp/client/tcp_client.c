@@ -1,15 +1,5 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <sys/select.h>
+#include "util.h"
+
 
 void err(char * err_msg){
     fprintf(stderr,"%s error: %d",err_msg,errno);
@@ -23,32 +13,9 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-    struct addrinfo hints;
-    memset(&hints,0,sizeof(hints));
-    hints.ai_socktype=SOCK_STREAM;
-    struct addrinfo * peer;
-    if(getaddrinfo(argv[1],argv[2],&hints,&peer))
-        err("getaddrinfo");
+    int socket_peer=connect_to_host_tcp(argv[1],argv[2]);
 
-    printf("Remote adress is: ");
-    char adress_buf[100];
-    char service_buf[100];
-    getnameinfo(peer->ai_addr,peer->ai_addrlen,adress_buf,sizeof(adress_buf),service_buf,sizeof(service_buf),NI_NUMERICHOST);
-    printf("%s %s \n",adress_buf,service_buf);
-
-    printf("Creating socket...\n");
-    int socket_peer;
-    if((socket_peer=socket(peer->ai_family,peer->ai_socktype,peer->ai_protocol))==-1)
-        err("socket");
-
-    printf("Connecting...\n");
-    if(connect(socket_peer,peer->ai_addr,peer->ai_addrlen))
-        err("connect");
-    freeaddrinfo(peer);
-
-    printf("Connected...\n");
     printf("To send data, enter text followed by enter...\n");
-
     char read_buf[4096];
     fd_set reads;
     fd_set copy;
