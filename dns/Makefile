@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		 := $(TOPDIR)/dns
 
 EXE_NAME := dns_query

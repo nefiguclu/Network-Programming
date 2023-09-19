@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		 := $(TOPDIR)/tcp/client
 
 EXE_NAME := tcp_client

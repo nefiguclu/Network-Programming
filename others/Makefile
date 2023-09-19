@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		 :=$(TOPDIR)/others
 
 EXE_NAME := get_localifaddr

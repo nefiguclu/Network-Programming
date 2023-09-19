@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		:=$(TOPDIR)/https/client/web_client
 
 EXE_NAME := web_client

@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		 :=$(TOPDIR)/tcp/server/dual_stack
 
 EXE_NAME := dual_stack_tcp

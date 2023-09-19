@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		:=$(TOPDIR)/udp/server
 
 EXE_NAME := udp_server
