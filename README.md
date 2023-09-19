@@ -5,6 +5,7 @@ This repo contains simple implementations of network programming. Feel free to c
 guclune@itu.edu.tr
 
 ### compilation
+   **source envr**
 
    run **make all** to compile all the source at once.
    
