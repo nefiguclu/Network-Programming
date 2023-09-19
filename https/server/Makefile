@@ -1,6 +1,6 @@
-DIR		:=$(TOPDIR)/udp/server
+DIR		:=$(TOPDIR)/https/server
 
-EXE_NAME := udp_server
+EXE_NAME := https_server
 
 SRC_DIR  := ./
 INC_DIR  := $(TOPDIR)/include
