@@ -1,4 +1,3 @@
-TOPDIR   := $(HOME)/personal-repos/Network-Programming
 DIR		 := $(TOPDIR)/ping
 
 EXE_NAME := ping
